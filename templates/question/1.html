@@ -1,0 +1,24 @@
+{% extends 'template.html' %}
+{% block title %}HOME{% endblock %}
+
+{% block content %}
+
+
+
+{{question}}
+
+<form action="/handler" method="POST">
+
+{% for i in choices %}
+<input type="radio" name="answer" value={{i}}>{{i}}</input>
+{% endfor %}
+<br>
+<input type = 'hidden' name='survey-type' value={{current_s}}></input>
+<button type ="submit">submit answer</button>
+</form>
+{{currRes}}
+
+
+
+
+{% endblock %}
