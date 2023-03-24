@@ -6,7 +6,7 @@
 <h1>Take a moment to fill out our surveys...</h1>
 
 {% for i in range(num_surveys) %}
-<form action="/handler" method="POST">
+<form action="/from_home" method="POST">
     Survey Title: {{ titles[i] }}<br>
     {{instructions[i]}}<br>
     <input type = 'hidden' name='survey-type' value={{surveys[i]}}></input>

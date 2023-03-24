@@ -1,5 +1,5 @@
-from flask import Flask, render_template, redirect, flash
-from flask import request
+from flask import Flask, render_template, redirect
+from flask import request, session
 from flask_debugtoolbar import DebugToolbarExtension
 import surveys
 
@@ -10,7 +10,6 @@ app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 debug = DebugToolbarExtension(app)
 
 
-responses = []
 currentSurvey = None
 question = None
 choices = None
@@ -19,45 +18,56 @@ startedSurvey = False
 
 @app.route('/')
 def home():
-    global startedSurvey
-    global responses
-
-    startedSurvey = False
-    responses = []
     
+
     surveyList = [survey for survey in surveys.surveys.keys()]
     surveyTitles = [surveys.surveys[survey].title for survey in surveyList]
     surveyInfo = [surveys.surveys[survey].instructions for survey in surveyList]
     numSurveys = len(surveyList)
 
+
     return render_template('home.html', num_surveys = numSurveys, surveys = surveyList, titles = surveyTitles, instructions = surveyInfo)
 
 
-@app.route('/handler', methods=['GET','POST'])
-def handler():
+@app.route('/from_home' , methods =['GET','POST'])
+def homeRouter():
+   
+    session['responses'] = []
     global currentSurvey
     global question
     global choices
     global text
-    global responses
-    
-    if startedSurvey:
-        answer = request.form['answer']
-        responses.append(answer)
-    else:
-        answer = ''
-    
-    currRes = len(responses)
+
     currentSurvey = str(request.form['survey-type'])
     
-
-    if len(responses) == len(surveys.surveys[currentSurvey].questions):
-        responses = []
-        return render_template('show_thanks.html')
+    question = surveys.surveys[currentSurvey].questions[len(session['responses'])].question
+    choices = surveys.surveys[currentSurvey].questions[len(session['responses'])].choices
+    text = surveys.surveys[currentSurvey].questions[len(session['responses'])].allow_text
     
-    question = surveys.surveys[currentSurvey].questions[currRes].question
-    choices = surveys.surveys[currentSurvey].questions[currRes].choices
-    text = surveys.surveys[currentSurvey].questions[currRes].allow_text
+    return redirect('/question')
+
+
+
+@app.route('/handler', methods=['GET','POST'])
+def handler():
+    global question
+    global choices
+    global text
+   
+    if startedSurvey:
+        answer = request.form['answer']
+        response = session['responses']
+        response.append(answer)
+        session['responses'] = response
+
+        if len(session['responses']) == len(surveys.surveys[currentSurvey].questions):
+            session['responses'] = []
+
+            return render_template('show_thanks.html')
+    
+    question = surveys.surveys[currentSurvey].questions[len(session['responses'])].question
+    choices = surveys.surveys[currentSurvey].questions[len(session['responses'])].choices
+    text = surveys.surveys[currentSurvey].questions[len(session['responses'])].allow_text
     
     return redirect('/question')
 # use cookie to pass currentSurvey
@@ -69,16 +79,13 @@ def return_question():
     global startedSurvey
     startedSurvey = True
 
-    currRes = len(responses)    
-    currResLen = str(currRes)
-    questionLen = str(len(surveys.surveys[currentSurvey].questions))
-
+    currRes = len(session['responses'])    
 
     if currentSurvey == None:
         return redirect('/')
     else:
-        return render_template(f'question/{currRes}.html', currRes = currResLen, question = question, choices = choices, text = text, current_s = currentSurvey )
-    # from question.html route to /answer
+        return render_template(f'question/{currRes}.html', question = question, choices = choices, text = text, current_s = currentSurvey )
+   
     
 
 
